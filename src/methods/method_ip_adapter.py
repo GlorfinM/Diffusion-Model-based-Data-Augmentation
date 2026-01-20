@@ -49,11 +49,11 @@ class IPAdapterAugmentor:
         # Move to GPU
         self.pipe = self.pipe.to(self.device)
         
-        # Memory optimization
-        try:
-            self.pipe.enable_xformers_memory_efficient_attention()
-        except Exception:
-            pass
+        # # Memory optimization
+        # try:
+        #     self.pipe.enable_xformers_memory_efficient_attention()
+        # except Exception:
+        #     pass
 
     def augment_image(self, image_path, output_dir, num_vars=2, target_size=(512, 512)):
         """

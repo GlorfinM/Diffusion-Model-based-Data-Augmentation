@@ -37,11 +37,11 @@ class InpaintingAugmentor:
         # Move to GPU
         self.pipe = self.pipe.to(self.device)
         
-        # Memory optimization
-        try:
-            self.pipe.enable_xformers_memory_efficient_attention()
-        except Exception:
-            pass
+        # # Memory optimization
+        # try:
+        #     self.pipe.enable_xformers_memory_efficient_attention()
+        # except Exception:
+        #     pass
 
     def augment_image(self, image_path, mask_path, output_dir, target_size=(512, 512)):
         try:
