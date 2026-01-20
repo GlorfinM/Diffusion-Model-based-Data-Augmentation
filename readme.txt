@@ -17,7 +17,6 @@ Project_Root/
 │       ├── __init__.py
 │       ├── method_inpainting.py  # [脚本3] 方案A：基于 Mask + Text 的背景重绘
 │       └── method_ip_adapter.py  # [脚本4] 方案B：基于 Image Prompt 的变体生成
-│    
 │
 ├── run_augment.py                # [主入口] 统一命令行接口，调度以上模块
 └── readme.txt                     # 项目说明
