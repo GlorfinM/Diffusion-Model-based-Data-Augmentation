@@ -7,7 +7,7 @@ from PIL import Image, ImageOps
 # Diffusers 库
 from diffusers import StableDiffusionInpaintPipeline, DPMSolverMultistepScheduler
 
-# === 配置区域: 增强场景提示词 ===
+# === Configuration: Scene Prompts ===
 PROMPT_SCENES = {
     "snow": "a photo of a pet on a snowy mountain, winter, cold weather, snow covered ground, high resolution, 8k, realistic texture",
     "beach": "a photo of a pet running on a sandy beach, ocean waves in background, sunny day, blue sky, summer vibes, high quality, 8k",
@@ -20,24 +20,24 @@ NEGATIVE_PROMPT = "ugly, blurry, low quality, deformed, distorted, bad anatomy, 
 
 class InpaintingAugmentor:
     def __init__(self, gpu_id=0, model_id="runwayml/stable-diffusion-inpainting"):
-        # 1. 显式构造设备字符串，例如 "cuda:1"
+        # Initialize device
         self.device = f"cuda:{gpu_id}" if torch.cuda.is_available() else "cpu"
-        print(f"🚀 正在初始化 Inpainting 模型 ({model_id}) 到设备: {self.device}...")
+        print(f"Initializing Inpainting model ({model_id}) on device: {self.device}...")
         
-        # 加载 Pipeline
+        # Load Pipeline
         self.pipe = StableDiffusionInpaintPipeline.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
             safety_checker=None
         )
         
-        # 切换调度器
+        # Switch scheduler
         self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(self.pipe.scheduler.config)
         
-        # 2. 移动到指定的 GPU
+        # Move to GPU
         self.pipe = self.pipe.to(self.device)
         
-        # 显存优化
+        # Memory optimization
         try:
             self.pipe.enable_xformers_memory_efficient_attention()
         except Exception:
@@ -48,7 +48,7 @@ class InpaintingAugmentor:
             init_image = Image.open(image_path).convert("RGB").resize(target_size)
             mask_image = Image.open(mask_path).convert("L").resize(target_size)
             
-            # Mask 反转
+            # Invert Mask
             mask_image = ImageOps.invert(mask_image)
 
             generated_count = 0
@@ -60,8 +60,8 @@ class InpaintingAugmentor:
                 if save_path.exists():
                     continue
 
-                # 推理
-                with torch.autocast("cuda"): # 自动混合精度
+                # Inference
+                with torch.autocast("cuda"):
                     result = self.pipe(
                         prompt=prompt,
                         negative_prompt=NEGATIVE_PROMPT,
@@ -79,27 +79,27 @@ class InpaintingAugmentor:
             return generated_count
 
         except Exception as e:
-            print(f"❌ 处理出错 {image_path.name}: {e}")
+            print(f"Error processing {image_path.name}: {e}")
             return 0
 
 def main():
-    parser = argparse.ArgumentParser(description="基于 Stable Diffusion Inpainting 的背景数据增强")
-    parser.add_argument("--raw_dir", type=str, default="data/raw", help="原始图片目录")
-    parser.add_argument("--mask_dir", type=str, default="data/masks", help="Mask 目录")
-    parser.add_argument("--output_dir", type=str, default="data/augmented/inpainting_bg", help="输出目录")
-    parser.add_argument("--gpu_id", type=int, default=0, help="使用的 GPU ID")
+    parser = argparse.ArgumentParser(description="Background augmentation using Stable Diffusion Inpainting")
+    parser.add_argument("--raw_dir", type=str, default="data/raw", help="Raw image directory")
+    parser.add_argument("--mask_dir", type=str, default="data/masks", help="Mask directory")
+    parser.add_argument("--output_dir", type=str, default="data/augmented/inpainting_bg", help="Output directory")
+    parser.add_argument("--gpu_id", type=int, default=0, help="GPU ID")
     args = parser.parse_args()
 
-    # 3. 将 GPU ID 传入类初始化函数
+    # Pass GPU ID to class initialization
     augmentor = InpaintingAugmentor(gpu_id=args.gpu_id)
 
     raw_path = Path(args.raw_dir)
     mask_path = Path(args.mask_dir)
     output_path = Path(args.output_dir)
 
-    # 递归查找所有图片
+    # Scan images
     all_images = list(raw_path.rglob("*.jpg"))
-    print(f"🔍 扫描到 {len(all_images)} 张原始图片")
+    print(f"Found {len(all_images)} raw images")
 
     total_generated = 0
     pbar = tqdm(all_images, desc=f"Inpainting on GPU {args.gpu_id}")
@@ -119,7 +119,7 @@ def main():
         
         pbar.set_postfix({"New Images": total_generated})
 
-    print(f"🎉 任务完成! 生成图片数: {total_generated}")
+    print(f"Task complete! Total generated: {total_generated}")
 
 if __name__ == "__main__":
     main()
